@@ -1,0 +1,80 @@
+<?php 
+include "/var/www/html/valida/db_connect.php";
+include "/var/www/html/valida/db_connect2.php";
+//$resultado = $_POST['valorCaja1'] + $_POST['valorCaja2']; 
+
+
+if($_POST['valorCaja1']<>'')
+{    
+//echo "entra1";    
+$query = "select imei from gs_objects where plate_number ='".$_POST['valorCaja1']."' LIMIT 1"; 
+    $stmt = $conn->query( $query ); 
+
+    while ( $row = $stmt->fetch( PDO::FETCH_ASSOC ) ){
+        $imei = $row[imei];
+    }
+}
+
+if($_POST['valorCaja2']<>'')
+{    
+//echo "entra 2";
+    $query = "select imei from gs_object_custom_fields where name = 'ID' and value = '".$_POST['valorCaja2']."' LIMIT 1"; 
+    $stmt = $conn->query( $query ); 
+
+    while ( $row = $stmt->fetch( PDO::FETCH_ASSOC ) ){
+        $imei = $row[imei];
+//	echo $imei;
+    }
+}
+
+/* $query = "select dt_tracker from gs_objects where imei = '".$imei."'"; */
+$query = "select gs_objects.dt_server,gs_object_custom_fields.value from gs_objects, gs_object_custom_fields where gs_objects.imei = '".$imei."' and gs_object_custom_fields.imei =  gs_objects.imei and gs_object_custom_fields.name like '%eñal' LIMIT 1";
+
+
+$query2 = mysqli_query($con,$query);
+
+while ($row2 = mysqli_fetch_array($query2)) {
+	echo row2[dt_server]; 
+}
+
+
+/*if ($stmt = $con->prepare($query)) {
+    $stmt->execute();
+    $stmt->bind_result($dt_server, $value);
+    while ($stmt->fetch()) {
+       // printf("%s, %s\n", $dt_server, $value);
+	echo  $dt_server;
+    }
+    $stmt->close();
+}
+*/
+
+
+
+
+/*$stmt2 = $conn->query( $query );
+ while ( $row2 = $stmt2->fetch( PDO::FETCH_ASSOC ) ){
+   $dt_tracker = $row2[1];
+  $value = $row2[2];
+}*/
+
+    
+$hoy = date("Y-m-d");
+
+if (substr($dt_tracker,0,10) == $hoy)
+{
+	
+	$d = new DateTime( $dt_tracker );
+	$d->modify( '-3 hours' ); //restas 3 horas
+	//echo $d->format( 'Y-m-d H:i:s' ); //mostras
+	
+    $resultado = 'Instalacion OK - '.$value.', Fecha reporte '.$d->format( 'Y-m-d H:i:s' );
+}
+else
+{
+    $resultado = 'Instalacion Erronea';
+}
+
+
+echo $resultado;
+?>

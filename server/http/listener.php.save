@@ -1,0 +1,97 @@
+[B<?
+	//ob_start();
+	//echo "OK";
+	//header("Content-length: " . (string)ob_get_length());
+	//ob_end_flush();
+	
+	//chdir('../');
+	//require_once ('/var/www/html/ruta.php');
+
+	include ('/var/www/html/track/server/s_insert.php');
+	include ('/var/www/html/track/server/eventos.php');
+	$data = json_decode(file_get_contents("php://input"), true);	
+	$loc = $data;
+
+
+	$result4 = '';
+	$mysqli = new mysqli('10.128.0.15', 'stech', 'Stech#306..,', 'gpsimple');
+	$q = 'SELECT overpass FROM gs_objects WHERE imei = '.$loc['imei'];		
+	$r = mysqli_query($mysqli, $q) or print_r(mysqli_error($mysqli));
+
+        $row = mysqli_fetch_array($r);
+			if($row[0] == 1){
+				$url = 'http://10.128.0.16/api/interpreter?data=[out:json];way(around:100.0,'.$loc['lat'].','.$loc['lng'].');out;';
+				$jsondata = json_decode(file_get_contents($url), true);		
+				for($i = 0; $i < 16; $i++){
+					if (isset($jsondata['elements'][$i]['tags']['maxspeed']))
+					{
+						$result4 = $jsondata['elements'][$i]['tags']['maxspeed'];
+						break;
+					}
+				}
+			}
+		
+
+		$result2 = json_encode($result4);
+		$result2 = str_replace('"','',$result2);
+
+		if ( $loc['speed'] > 145 && $loc['speed'] < 147 ){
+			mysqli_close($ms);
+			mysqli_close($mysqli);
+			die;
+		}
+
+		if ( $loc['lat'] > 0 || $loc['lng'] > 0 ){
+			mysqli_close($ms);
+			mysqli_close($mysqli);
+			die;
+		}		
+ 
+		if ($result2 != '')
+		{	
+			$loc['overpass'] = $result2;
+		}else{
+			$loc['overpass'] = 0;
+		}
+	/*for ($i = 0; $i < count($data); ++$i)
+	{
+		echo $i;
+		$loc = $data[$i];
+		
+		/*if (!isset($loc["imei"]))
+		{
+			continue;
+		}*/
+		
+		$loc['dt_server'] = gmdate("Y-m-d H:i:s");	
+		if(!isset($loc['dt_tracker'])){
+			mysqli_close($ms);
+			mysqli_close($mysqli);
+			die;
+		}
+		$dt_server = strtotime($loc['dt_server']);
+		$dt_tracker = strtotime($loc['dt_tracker']);
+		$dt_diferencia = $dt_server - $dt_tracker;
+		//$loc['params'] = paramsToArray($loc['params']);
+
+//		if($dt_diferencia < 30){
+			if ($loc["op"] == "loc")
+			{			
+				insert_db_loc($loc);	
+			}
+			else if ($loc["op"] == "noloc")
+			{
+				insert_db_noloc($loc);
+			}
+			else if ($loc["op"] == "imgloc")
+			{
+				insert_db_imgloc($loc);
+			}
+//		}
+	//}
+
+
+	mysqli_close($ms);
+mysqli_close($mysqli);
+	die;
+?>
